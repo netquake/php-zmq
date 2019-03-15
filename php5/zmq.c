@@ -171,7 +171,7 @@ static php_zmq_context *php_zmq_context_new(long io_threads, zend_bool is_persis
 {
 	php_zmq_context *context;
 
-	context = pecalloc(1, sizeof(php_zmq_context), is_persistent);
+	context = (php_zmq_context*)pecalloc(1, sizeof(php_zmq_context), is_persistent);
 #ifdef PHP_ZMQ_PTHREADS
 	if (is_global) {
 		/* Guard the context creation */
@@ -218,7 +218,7 @@ static php_zmq_context *php_zmq_context_get(long io_threads, zend_bool is_persis
 		plist_key_len  = snprintf(plist_key, 48, "zmq_context:[%d]", io_threads);
 		plist_key_len += 1;
 
-		if (zend_hash_find(&EG(persistent_list), plist_key, plist_key_len, (void *)&le_p) == SUCCESS) {
+		if (zend_hash_find(&EG(persistent_list), plist_key, plist_key_len, (void **)&le_p) == SUCCESS) {
 			if (le_p->type == php_zmq_context_list_entry()) {
 				return (php_zmq_context *) le_p->ptr;
 			}
@@ -383,7 +383,7 @@ static php_zmq_socket *php_zmq_socket_new(php_zmq_context *context, int type, ze
 {
 	php_zmq_socket *zmq_sock;
 
-	zmq_sock           = pecalloc(1, sizeof(php_zmq_socket), is_persistent);
+	zmq_sock           = (php_zmq_socket*)pecalloc(1, sizeof(php_zmq_socket), is_persistent);
 	zmq_sock->z_socket = zmq_socket(context->z_ctx, type);
 	zmq_sock->pid      = getpid();
 
@@ -444,7 +444,7 @@ static php_zmq_socket *php_zmq_socket_get(php_zmq_context *context, int type, co
 
 		plist_key = php_zmq_socket_plist_key(type, persistent_id, &plist_key_len);
 
-		if (zend_hash_find(&EG(persistent_list), plist_key, plist_key_len + 1, (void *)&le) == SUCCESS) {
+		if (zend_hash_find(&EG(persistent_list), plist_key, plist_key_len + 1, (void **)&le) == SUCCESS) {
 			if (le->type == php_zmq_socket_list_entry()) {
 				efree(plist_key);
 				return (php_zmq_socket *) le->ptr;
@@ -841,7 +841,7 @@ static zend_bool php_zmq_recv(php_zmq_socket_object *intern, long flags, zval *r
 		return 0;
 	}
 
-	ZVAL_STRINGL(return_value, zmq_msg_data(&message), zmq_msg_size(&message), 1);
+	ZVAL_STRINGL(return_value, (const char*)zmq_msg_data(&message), zmq_msg_size(&message), 1);
 	zmq_msg_close(&message);
 	return 1;
 }
@@ -1227,7 +1227,7 @@ PHP_METHOD(zmqpoll, add)
 			break;
 		}
 
-		zend_throw_exception(php_zmq_poll_exception_sc_entry, message, PHP_ZMQ_INTERNAL_ERROR TSRMLS_CC);
+		zend_throw_exception(php_zmq_poll_exception_sc_entry, (char*)message, PHP_ZMQ_INTERNAL_ERROR TSRMLS_CC);
 		return;
 	}
 

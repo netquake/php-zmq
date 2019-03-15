@@ -46,8 +46,8 @@ void php_zmq_pollset_init(php_zmq_pollset *set)
 	set->num_php_items   = 0;
 	set->alloc_size      = PHP_ZMQ_ALLOC_SIZE;
 
-	set->items     = ecalloc(PHP_ZMQ_ALLOC_SIZE, sizeof(zmq_pollitem_t));
-	set->php_items = ecalloc(PHP_ZMQ_ALLOC_SIZE, sizeof(php_zmq_pollitem));
+	set->items     = (zmq_pollitem_t*)ecalloc(PHP_ZMQ_ALLOC_SIZE, sizeof(zmq_pollitem_t));
+	set->php_items = (php_zmq_pollitem*)ecalloc(PHP_ZMQ_ALLOC_SIZE, sizeof(php_zmq_pollitem));
 
 	MAKE_STD_ZVAL(set->errors);
 	array_init(set->errors);
@@ -192,12 +192,12 @@ int php_zmq_pollset_add(php_zmq_pollset *pollset, zval *entry, int events TSRMLS
 			return PHP_ZMQ_POLLSET_ERR_CANNOT_CAST;
 		}
 
-		if (php_stream_cast(stream, (PHP_STREAM_AS_FD | PHP_STREAM_CAST_INTERNAL | PHP_STREAM_AS_SOCKETD) & ~REPORT_ERRORS, (void*)&fd, 0) == FAILURE) {
+		if (php_stream_cast(stream, (PHP_STREAM_AS_FD | PHP_STREAM_CAST_INTERNAL | PHP_STREAM_AS_SOCKETD) & ~REPORT_ERRORS, (void**)&fd, 0) == FAILURE) {
 			return PHP_ZMQ_POLLSET_ERR_CAST_FAILED;
 		}
 
 		if (resize) {
-			pollset->items = erealloc(pollset->items, (pollset->alloc_size + PHP_ZMQ_ALLOC_SIZE) * sizeof(zmq_pollitem_t));
+			pollset->items = (zmq_pollitem_t*)erealloc(pollset->items, (pollset->alloc_size + PHP_ZMQ_ALLOC_SIZE) * sizeof(zmq_pollitem_t));
 		}
 
 		memset(&(pollset->items[pollset->num_items]), 0, sizeof(zmq_pollitem_t));
@@ -208,7 +208,7 @@ int php_zmq_pollset_add(php_zmq_pollset *pollset, zval *entry, int events TSRMLS
 		php_zmq_socket_object *item = (php_zmq_socket_object *)zend_object_store_get_object(entry TSRMLS_CC);
 
 		if (resize) {
-			pollset->items = erealloc(pollset->items, (pollset->alloc_size + PHP_ZMQ_ALLOC_SIZE) * sizeof(zmq_pollitem_t));
+			pollset->items = (zmq_pollitem_t*)erealloc(pollset->items, (pollset->alloc_size + PHP_ZMQ_ALLOC_SIZE) * sizeof(zmq_pollitem_t));
 		}
 
 		memset(&(pollset->items[pollset->num_items]), 0, sizeof(zmq_pollitem_t));
@@ -221,7 +221,7 @@ int php_zmq_pollset_add(php_zmq_pollset *pollset, zval *entry, int events TSRMLS
 	Z_ADDREF_P(entry);
 
 	if (resize) {
-		pollset->php_items   = erealloc(pollset->php_items, (pollset->alloc_size + PHP_ZMQ_ALLOC_SIZE) * sizeof(php_zmq_pollitem));
+		pollset->php_items   = (php_zmq_pollitem*)erealloc(pollset->php_items, (pollset->alloc_size + PHP_ZMQ_ALLOC_SIZE) * sizeof(php_zmq_pollitem));
 		pollset->alloc_size += PHP_ZMQ_ALLOC_SIZE;
 	}
 
@@ -256,7 +256,7 @@ void php_zmq_pollset_rebuild(php_zmq_pollset *set)
 	if (set->items) {
 		efree(set->items);
 	}
-	set->items = ecalloc(set->alloc_size, sizeof(zmq_pollitem_t));
+	set->items = (zmq_pollitem_t*)ecalloc(set->alloc_size, sizeof(zmq_pollitem_t));
 
 	for (i = 0; i < set->num_php_items; i++) {
 		if (Z_TYPE_P(set->php_items[i].entry) == IS_RESOURCE) {
@@ -286,7 +286,7 @@ zend_bool php_zmq_pollset_delete_by_key(php_zmq_pollset *set, char key[35], int 
 	zend_bool match = 0;
 
 	alloc_size = (set->alloc_size - set->num_items > PHP_ZMQ_ALLOC_SIZE) ? (set->alloc_size - PHP_ZMQ_ALLOC_SIZE) : set->alloc_size;
-	php_items  = ecalloc(alloc_size, sizeof(php_zmq_pollitem));
+	php_items  = (php_zmq_pollitem*)ecalloc(alloc_size, sizeof(php_zmq_pollitem));
 
 	for (i = 0; i < set->num_php_items; i++) {
 		if (!match && key_len == set->php_items[i].key_len &&

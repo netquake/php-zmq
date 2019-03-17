@@ -1,3 +1,5 @@
+This is a c program, but we still could compile it with c++ by running 'export CC="g++"'.
+
 PHP bindings for 0MQ. The documentation is available at http://php.net/zmq
 
 [![Build Status](https://travis-ci.org/mkoppanen/php-zmq.png?branch=master)](https://travis-ci.org/mkoppanen/php-zmq)

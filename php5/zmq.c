@@ -915,6 +915,117 @@ PHP_METHOD(zmqsocket, recvmulti)
 }
 /* }}} */
 
+
+//////////// custom function ///////////////////////////////////////
+
+
+/* {{{ proto ZMQSocket ZMQSocket::sendmulti(arrays $messages[, integer $flags = 0])
+	Send a multipart message. Return true if message was sent and false on EAGAIN
+*/
+PHP_METHOD(zmqsocket, fetchmulti)
+{
+	{
+		zval *messages;
+		php_zmq_socket_object *intern;
+		int to_send, ret = 0;
+		long flags = 0;
+
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|l", &messages, &flags) == FAILURE) {
+			return;
+		}
+
+		intern = PHP_ZMQ_SOCKET_OBJECT;
+
+		///////// send message //////////////////////////////
+		to_send = zend_hash_num_elements(Z_ARRVAL_P(messages));
+
+	#if (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION < 3)
+		zend_hash_apply_with_arguments(Z_ARRVAL_P(messages), (apply_func_args_t) php_zmq_send_cb, 4, intern, flags, &to_send, &ret);
+	#else
+		zend_hash_apply_with_arguments(Z_ARRVAL_P(messages) TSRMLS_CC, (apply_func_args_t) php_zmq_send_cb, 4, intern, flags, &to_send, &ret);
+	#endif
+
+		if (!ret) {
+			RETURN_FALSE;
+		}
+	}
+
+	///////// waiting for message ///////////////////////////
+	{
+		php_zmq_poll_object *intern;
+		zval *r_array, *w_array;
+
+		long timeout = 1000;
+		int rc;
+
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a!a!|l", &r_array, &w_array, &timeout) == FAILURE) {
+			return;
+		}
+
+		intern = PHP_ZMQ_POLL_OBJECT;
+		ALLOC_INIT_ZVAL(r_array);
+		ALLOC_INIT_ZVAL(w_array);
+		array_init(r_array);
+		array_init(w_array);
+
+		if (intern->set.num_items == 0) {
+			zend_throw_exception(php_zmq_poll_exception_sc_entry, "No sockets assigned to the ZMQPoll", PHP_ZMQ_INTERNAL_ERROR TSRMLS_CC);
+			return;
+		}
+
+		rc = php_zmq_pollset_poll(&(intern->set), timeout * PHP_ZMQ_TIMEOUT, r_array, w_array, intern->set.errors);
+
+		if (rc == -1) {
+			zend_throw_exception_ex(php_zmq_poll_exception_sc_entry, errno TSRMLS_CC, "Poll failed: %s", zmq_strerror(errno));
+			return;
+		}
+
+		if(!rc) {
+			RETURN_FALSE;
+		}
+	}
+
+	///////// read message //////////////////////////////////
+	{
+		php_zmq_socket_object *intern;
+		size_t value_len;
+		long flags = 0;
+		zend_bool retval;
+		zval *msg;
+	#if ZMQ_VERSION_MAJOR < 3	
+		int64_t value;
+	#else
+		int value;
+	#endif
+
+		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &flags) == FAILURE) {
+			return;
+		}
+
+		intern = PHP_ZMQ_SOCKET_OBJECT;
+		array_init(return_value);
+		value_len = sizeof (value);
+
+		do {
+			MAKE_STD_ZVAL(msg);
+			retval = php_zmq_recv(intern, flags, msg TSRMLS_CC);
+			if (retval == 0) {
+				FREE_ZVAL(msg);
+				zval_dtor(return_value);
+				RETURN_FALSE;
+			}
+			add_next_index_zval(return_value, msg);
+			zmq_getsockopt(intern->socket->z_socket, ZMQ_RCVMORE, &value, &value_len);
+		} while (value > 0);
+
+		return;
+	}
+}
+
+
+/////////////////////////////////////////////////////////////////////
+
+
 /** {{{ string ZMQ::getPersistentId() 
 	Returns the persistent id of the object
 */

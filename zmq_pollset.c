@@ -76,9 +76,9 @@ void s_pollset_clear(php_zmq_pollset *set, zend_bool reinit)
 	}
 
 	if (reinit) {
-		set->items      = ecalloc(set->alloc_size, sizeof(zmq_pollitem_t));
-		set->keys       = ecalloc(set->alloc_size, sizeof(zend_string *));
-		set->zv         = ecalloc(set->alloc_size, sizeof(zval));
+		set->items      = (zmq_pollitem_t *)ecalloc(set->alloc_size, sizeof(zmq_pollitem_t));
+		set->keys       = (zend_string **)ecalloc(set->alloc_size, sizeof(zend_string *));
+		set->zv         = (zval *)ecalloc(set->alloc_size, sizeof(zval));
 		set->allocated  = set->alloc_size;
 		set->num_items  = 0;
 	}
@@ -91,9 +91,9 @@ size_t s_pollset_append(php_zmq_pollset *set, zmq_pollitem_t *item, zend_string 
 
 	if (set->allocated <= set->num_items + 1) {
 
-		set->items = erealloc (set->items, (set->allocated + set->alloc_size) * sizeof(zmq_pollitem_t));
-		set->keys  = erealloc (set->keys,  (set->allocated + set->alloc_size) * sizeof(zend_string *));
-		set->zv    = erealloc (set->zv,    (set->allocated + set->alloc_size) * sizeof(zval));
+		set->items = (zmq_pollitem_t *)erealloc (set->items, (set->allocated + set->alloc_size) * sizeof(zmq_pollitem_t));
+		set->keys  = (zend_string **)erealloc (set->keys,  (set->allocated + set->alloc_size) * sizeof(zend_string *));
+		set->zv    = (zval *)erealloc (set->zv,    (set->allocated + set->alloc_size) * sizeof(zval));
 
 		set->allocated += set->alloc_size;
 	}
@@ -135,9 +135,9 @@ void s_pollset_delete(php_zmq_pollset *set, size_t index)
 	if ((set->allocated - set->alloc_size > set->num_items) &&
 	    (set->allocated - set->alloc_size > set->alloc_size)) {
 
-		set->items = erealloc (set->items, (set->allocated - set->alloc_size) * sizeof(zmq_pollitem_t));
-		set->keys  = erealloc (set->keys,  (set->allocated - set->alloc_size) * sizeof(zend_string *));
-		set->zv    = erealloc (set->zv,    (set->allocated - set->alloc_size) * sizeof(zval));
+		set->items = (zmq_pollitem_t *)erealloc (set->items, (set->allocated - set->alloc_size) * sizeof(zmq_pollitem_t));
+		set->keys  = (zend_string **)erealloc (set->keys,  (set->allocated - set->alloc_size) * sizeof(zend_string *));
+		set->zv    = (zval *)erealloc (set->zv,    (set->allocated - set->alloc_size) * sizeof(zval));
 
 		set->allocated -= set->alloc_size;
 	}
@@ -181,13 +181,13 @@ zend_string *s_create_key(zval *entry)
 
 php_zmq_pollset *php_zmq_pollset_init()
 {
-	php_zmq_pollset *set = ecalloc (1, sizeof(php_zmq_pollset));
+	php_zmq_pollset *set = (php_zmq_pollset *)ecalloc (1, sizeof(php_zmq_pollset));
 
 	array_init(&set->errors);
 
-	set->items      = ecalloc(PHP_ZMQ_ALLOC_SIZE, sizeof(zmq_pollitem_t));
-	set->keys       = ecalloc(PHP_ZMQ_ALLOC_SIZE, sizeof(zend_string *));
-	set->zv         = ecalloc(PHP_ZMQ_ALLOC_SIZE, sizeof(zval));
+	set->items      = (zmq_pollitem_t *)ecalloc(PHP_ZMQ_ALLOC_SIZE, sizeof(zmq_pollitem_t));
+	set->keys       = (zend_string **)ecalloc(PHP_ZMQ_ALLOC_SIZE, sizeof(zend_string *));
+	set->zv         = (zval *)ecalloc(PHP_ZMQ_ALLOC_SIZE, sizeof(zval));
 	set->allocated  = PHP_ZMQ_ALLOC_SIZE;
 	set->alloc_size = PHP_ZMQ_ALLOC_SIZE;
 	set->num_items  = 0;
@@ -254,7 +254,7 @@ zend_string *php_zmq_pollset_add(php_zmq_pollset *set, zval *entry, int events, 
 			return NULL;
 		}
 
-		if (php_stream_cast(stream, (PHP_STREAM_AS_FD | PHP_STREAM_CAST_INTERNAL | PHP_STREAM_AS_SOCKETD) & ~REPORT_ERRORS, (void*)&fd, 0) == FAILURE) {
+		if (php_stream_cast(stream, (PHP_STREAM_AS_FD | PHP_STREAM_CAST_INTERNAL | PHP_STREAM_AS_SOCKETD) & ~REPORT_ERRORS, (void**)&fd, 0) == FAILURE) {
 			*error = PHP_ZMQ_POLLSET_ERR_CAST_FAILED;
 			zend_string_release(key);
 			return NULL;

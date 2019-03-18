@@ -76,7 +76,7 @@ struct _php_zmq_clock_ctx_t {};
 php_zmq_clock_ctx_t *php_zmq_clock_init ()
 {
 	return
-		malloc (sizeof (php_zmq_clock_ctx_t));
+		(php_zmq_clock_ctx_t *)malloc (sizeof (php_zmq_clock_ctx_t));
 }
 
 uint64_t php_zmq_clock (php_zmq_clock_ctx_t *clock_ctx)

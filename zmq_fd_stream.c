@@ -112,7 +112,7 @@ php_stream *php_zmq_create_zmq_fd(zval *obj)
 	php_stream *stream;
 	php_zmq_stream_container *container;
 
-	container = ecalloc(1, sizeof(php_zmq_stream_container));
+	container = (php_zmq_stream_container *)ecalloc(1, sizeof(php_zmq_stream_container));
 	stream = php_stream_alloc(&php_stream_zmq_fd_ops, container, NULL, "r");
 
 	if (stream) {

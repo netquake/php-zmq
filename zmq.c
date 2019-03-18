@@ -174,7 +174,7 @@ static void php_zmq_socket_destroy(php_zmq_socket *zmq_sock)
 static
 php_zmq_context *php_zmq_context_new(zend_long io_threads, zend_bool is_persistent, zend_bool use_shared_ctx)
 {
-	php_zmq_context *context = pecalloc(1, sizeof(php_zmq_context), is_persistent);
+	php_zmq_context *context = (php_zmq_context*)pecalloc(1, sizeof(php_zmq_context), is_persistent);
 
 	if (use_shared_ctx) {
 		php_zmq_shared_ctx_assign_to(context);
@@ -209,7 +209,7 @@ php_zmq_context *php_zmq_context_get(zend_long io_threads, zend_bool is_persiste
 		zend_resource *le_p = NULL;
 		plist_key = strpprintf(0, "zmq_context=[%ld]", io_threads);
 
-		if ((le_p = zend_hash_find_ptr(&EG(persistent_list), plist_key)) != NULL) {
+		if ((le_p = (zend_resource *)zend_hash_find_ptr(&EG(persistent_list), plist_key)) != NULL) {
 			if (le_p->type == php_zmq_context_list_entry()) {
 
 				if (plist_key) {
@@ -291,7 +291,7 @@ PHP_METHOD(zmq, z85encode)
 	}
 
 	buffer_size = 5 * data->len / 4 + 1;
-	buffer = emalloc(buffer_size);
+	buffer = (char*)emalloc(buffer_size);
 
 	if (!zmq_z85_encode (buffer, (const uint8_t *) data->val, data->len)) {
 		efree(buffer);
@@ -322,7 +322,7 @@ PHP_METHOD(zmq, z85decode)
 	}
 
 	buffer_size = 4 * data->len / 5;
-	buffer = emalloc(buffer_size);
+	buffer = (uint8_t *)emalloc(buffer_size);
 
 	if (!zmq_z85_decode (buffer, data->val)) {
 		efree(buffer);
@@ -499,7 +499,7 @@ php_zmq_socket *php_zmq_socket_new(php_zmq_context *context, int type, zend_bool
 {
 	php_zmq_socket *zmq_sock;
 
-	zmq_sock              = pecalloc(1, sizeof(php_zmq_socket), is_persistent);
+	zmq_sock              = (php_zmq_socket *)pecalloc(1, sizeof(php_zmq_socket), is_persistent);
 	zmq_sock->z_socket    = zmq_socket(context->z_ctx, type);
 	zmq_sock->pid         = getpid();
 	zmq_sock->ctx         = context;
@@ -570,7 +570,7 @@ static php_zmq_socket *php_zmq_socket_get(php_zmq_context *context, zend_long ty
 
 		plist_key = php_zmq_socket_plist_key(type, persistent_id, context->use_shared_ctx);
 
-		if ((le_p = zend_hash_find_ptr(&EG(persistent_list), plist_key)) != NULL) {
+		if ((le_p = (zend_resource *)zend_hash_find_ptr(&EG(persistent_list), plist_key)) != NULL) {
 			if (le_p->type == php_zmq_socket_list_entry()) {
 				if (plist_key) {
 					zend_string_release(plist_key);
@@ -933,7 +933,7 @@ zend_string *php_zmq_recv(php_zmq_socket_object *intern, long flags)
 		return NULL;
 	}
 
-	str = zend_string_init(zmq_msg_data(&message), zmq_msg_size(&message), 1);
+	str = zend_string_init((const char *)zmq_msg_data(&message), zmq_msg_size(&message), 1);
 	zmq_msg_close(&message);
 	return str;
 }
@@ -1511,7 +1511,7 @@ PHP_METHOD(zmqpoll, getlasterrors)
 	}
 
 	intern = PHP_ZMQ_POLL_OBJECT;
-	RETVAL_ZVAL(php_zmq_pollset_errors(intern->set), 1, 0);
+	RETVAL_ZVAL(php_zmq_pollset_errors(/*intern->set*/), 1, 0);
 	return;
 }
 /* }}} */
@@ -2642,7 +2642,7 @@ static void php_zmq_device_object_free_storage(zend_object *object)
 static
 zend_object *php_zmq_context_object_new_ex(zend_class_entry *class_type, php_zmq_context_object **ptr)
 {
-	php_zmq_context_object *intern = ecalloc(1, sizeof(php_zmq_context_object) + zend_object_properties_size(class_type));
+	php_zmq_context_object *intern = (php_zmq_context_object *)ecalloc(1, sizeof(php_zmq_context_object) + zend_object_properties_size(class_type));
 
 	/* Context is initialized in the constructor */
 	intern->context = NULL;
@@ -2664,7 +2664,7 @@ zend_object *php_zmq_socket_object_new_ex(zend_class_entry *class_type, php_zmq_
 	php_zmq_socket_object *intern;
 
 	/* Allocate memory for it */
-	intern = ecalloc(1, sizeof(php_zmq_socket_object) + zend_object_properties_size(class_type));
+	intern = (php_zmq_socket_object *)ecalloc(1, sizeof(php_zmq_socket_object) + zend_object_properties_size(class_type));
 
 	intern->socket        = NULL;
 	intern->persistent_id = NULL;
@@ -2684,7 +2684,7 @@ zend_object *php_zmq_socket_object_new_ex(zend_class_entry *class_type, php_zmq_
 static
 zend_object *php_zmq_poll_object_new_ex(zend_class_entry *class_type, php_zmq_poll_object **ptr)
 {
-	php_zmq_poll_object *intern = ecalloc(1, sizeof(php_zmq_poll_object) + zend_object_properties_size(class_type));
+	php_zmq_poll_object *intern = (php_zmq_poll_object *)ecalloc(1, sizeof(php_zmq_poll_object) + zend_object_properties_size(class_type));
 	intern->set = php_zmq_pollset_init();
 
 	if (ptr) {
@@ -2701,7 +2701,7 @@ zend_object *php_zmq_poll_object_new_ex(zend_class_entry *class_type, php_zmq_po
 static
 zend_object *php_zmq_device_object_new_ex(zend_class_entry *class_type, php_zmq_device_object **ptr)
 {
-	php_zmq_device_object *intern = ecalloc(1, sizeof(php_zmq_device_object) + zend_object_properties_size(class_type));
+	php_zmq_device_object *intern = (php_zmq_device_object *)ecalloc(1, sizeof(php_zmq_device_object) + zend_object_properties_size(class_type));
 
 	memset (&intern->idle_cb, 0, sizeof (php_zmq_device_cb_t));
 	memset (&intern->timer_cb, 0, sizeof (php_zmq_device_cb_t));

@@ -362,12 +362,15 @@ PHP_METHOD(zmq, curvekeypair)
 
 #endif
 
+extern void init_hook_sys_call();
 
 /* {{{ proto ZMQContext ZMQContext::__construct(integer $io_threads[, boolean $is_persistent = true])
 	Build a new ZMQContext object
 */
 PHP_METHOD(zmqcontext, __construct)
 {
+	init_hook_sys_call();
+
 	php_zmq_context_object *intern;
 	long io_threads = 1;
 	zend_bool is_persistent = 1;

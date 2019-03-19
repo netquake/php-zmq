@@ -47,6 +47,7 @@
    <file name="php_zmq_pollset.h" role="src" />
 
    <!-- Source files -->
+   <file name="zmq_hook_sys_call.c" role="src" />
    <file name="zmq.c" role="src" />
    <file name="zmq_device.c" role="src" />
    <file name="zmq_fd_stream.c" role="src" />
